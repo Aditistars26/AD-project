@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Activity Feedback</string>
+    <string name="splash_subtitle">Connect, Share, Improve</string>
+
+    <!-- Auth -->
+    <string name="login_title">Welcome Back</string>
+    <string name="register_title">Create an Account</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="full_name">Full Name</string>
+    <string name="select_role">Select your role:</string>
+    <string name="student">Student</string>
+    <string name="professor">Professor</string>
+    <string name="no_account_register">Don\'t have an account? Register</string>
+    <string name="already_have_account">Already have an account? Login</string>
+
+    <!-- Dashboard -->
+    <string name="no_forms_created">You haven\'t created any forms yet</string>
+    <string name="no_forms_available">No feedback forms are available right now</string>
+    <string name="logout">Logout</string>
+
+    <!-- Form Creation -->
+    <string name="form_details">Form Details</string>
+    <string name="form_title">Form Title</string>
+    <string name="form_description">Form Description</string>
+    <string name="questions">Questions</string>
+    <string name="add_question">Add Question</string>
+    <string name="save_form">Save Form</string>
+    <string name="question_text">Question Text</string>
+    <string name="question_type">Question Type</string>
+    <string name="text">Text</string>
+    <string name="multiple_choice">Multiple Choice</string>
+    <string name="rating">Rating</string>
+    <string name="options_comma_separated">Options (comma separated)</string>
+    <string name="min_value">Minimum Value</string>
+    <string name="max_value">Maximum Value</string>
+
+    <!-- Form Submission -->
+    <string name="your_answer">Your answer</string>
+    <string name="submit_feedback">Submit Feedback</string>
+
+    <!-- Form Results -->
+    <string name="no_submissions">No submissions yet</string>
+</resources>
