@@ -1,12 +1,18 @@
 package com.example.activityfeedback.models;
 
+import java.util.List;
+
 public class User {
     private String userId;
     private String email;
     private String name;
-
+    private String phone;
+    private String department;
+    private int year;
     private String rollNumber;
-
+    private String enrollmentId;
+    private String className;
+    private List<String> electives;
     private String role;
 
     public User() {
@@ -20,6 +26,8 @@ public class User {
         this.rollNumber = rollNumber;
         this.role = role;
     }
+
+
 
     public String getUserId() {
         return userId;
@@ -67,5 +75,51 @@ public class User {
 
     public boolean isStudent() {
         return "student".equals(role);
+    }
+
+    public String getEnrollmentId() {
+        return enrollmentId;
+    }
+
+    public void setEnrollmentId(String enrollmentId) {
+        this.enrollmentId = enrollmentId;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+    }
+
+    public List<String> getElectives() {
+        return electives;
+    }
+
+    public void setElectives(List<String> electives) {
+        this.electives = electives;
+    }
+
+    public String getPhone(){
+        return phone;
+    }
+    public String getDepartment(){
+        return department;
+    }
+    public void setPhone(String phone) {
+        this.phone=phone;
+    }
+
+    public void setDepartment(String department) {
+        this.department= department;
     }
 }

@@ -8,10 +8,10 @@ import androidx.annotation.RequiresApi;
 
 import com.example.activityfeedback.models.Form;
 import com.example.activityfeedback.models.Question;
+import com.example.activityfeedback.models.StudentAnswerStatus;
 import com.example.activityfeedback.models.Submission;
 import com.example.activityfeedback.models.User;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -26,8 +26,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import com.google.firebase.firestore.DocumentSnapshot;
+
 public class FirebaseHelper {
+
+    private static List<User> cachedStudents = new ArrayList<>();
+
+    public static void setCachedStudents(List<User> students) {
+        cachedStudents = students;
+    }
+
+    public static List<User> getCachedStudents() {
+        return cachedStudents;
+    }
+
     private static final String TAG = "FirebaseHelper";
     private static final String DATABASE_URL = "https://activity-feedback-a9397-default-rtdb.firebaseio.com/";
 
@@ -39,6 +50,7 @@ public class FirebaseHelper {
         if (database == null) {
             database = FirebaseDatabase.getInstance(DATABASE_URL);
 //            database.setPersistenceEnabled(true);
+
         }
 
         if (auth == null) {
@@ -75,6 +87,88 @@ public class FirebaseHelper {
                     }
                     listener.onComplete(task);
                 });
+    }
+
+    public void saveStudentsToFirebase(List<User> students) {
+        DatabaseReference usersRef = database.getReference("users");
+
+        for (User student : students) {
+            String userId = student.getUserId();
+            usersRef.child(userId).setValue(student)
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d("FirebaseHelper", "Student data saved: " + student.getEnrollmentId());
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("FirebaseHelper", "Error saving student data", e);
+                    });
+        }
+    }
+
+    // Register students in Firebase Authentication and save to Firebase Database
+    public static void registerStudents(List<User> students) {
+        for (User student : students) {
+            String email = student.getEmail();
+            String password = "Password123";
+
+            registerUser(email, password, student.getName(), student.getRollNumber(), "student", task -> {
+                if (task.isSuccessful() && task.getResult() != null) {
+                    String userId = task.getResult().getUser().getUid();
+                    student.setUserId(userId);
+
+                    // Save full user data to Firebase Database
+                    saveStudentToFirebase(student);
+                } else {
+                    Log.e("RegisterStudent", "Failed to register: " + email, task.getException());
+                }
+            });
+        }
+    }
+
+
+    public static void saveStudentToFirebase(User student) {
+        DatabaseReference usersRef = database.getReference("users");
+
+        String userId = student.getUserId();  // Assuming this is populated in the User object
+        usersRef.child(userId).setValue(student)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Student data saved: " + student.getRollNumber());
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error saving student data", e);
+                });
+    }
+
+
+
+    public static void fetchAllStudents(OnStudentsFetchedListener listener) {
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("users");
+
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<User> students = new ArrayList<>();
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    User user = child.getValue(User.class);
+                    if (user != null && "student".equalsIgnoreCase(user.getRole())) {
+                        students.add(user);
+                    }
+                }
+                listener.onStudentsFetched(students);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onStudentsFetched(null);
+            }
+        });
+    }
+
+    public interface OnStudentsFetchedListener {
+        void onStudentsFetched(List<User> students);
+    }
+
+
+    private static void updateStudentListUI() {
     }
 
 
@@ -147,6 +241,34 @@ public class FirebaseHelper {
         formsRef.child(formId).setValue(formValues)
                 .addOnCompleteListener(task -> callback.accept(task.isSuccessful()));
     }
+
+    public static void getAllStudents(OnStudentsLoadedListener listener) {
+        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
+
+        usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                List<User> students = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    User student = snapshot.getValue(User.class);
+                    if (student != null && "student".equalsIgnoreCase(student.getRole())) {
+                        students.add(student);
+                    }
+                }
+                listener.onStudentsLoaded(students);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                listener.onStudentsLoaded(new ArrayList<>()); // Return empty on error
+            }
+        });
+    }
+
+    public interface OnStudentsLoadedListener {
+        void onStudentsLoaded(List<User> students);
+    }
+
 
     public static void getFormsCreatedBy(String userId, Consumer<List<Form>> callback) {
         database.getReference("forms")
@@ -506,16 +628,6 @@ public class FirebaseHelper {
                 });
     }
 
-// Make sure your Question class has an order field
-// public void setOrder(Integer order) {
-//     this.order = order;
-// }
-//
-// public Integer getOrder() {
-//     return order;
-// }
-
-    // Add these interfaces
     public interface SubmissionCallback {
         void onCallback(Submission submission);
     }
@@ -524,8 +636,79 @@ public class FirebaseHelper {
         void onCallback(List<Question> questions);
     }
 
+    public static void getStudentsWithAnswerStatus(String formId, final OnStudentAnswersFetchListener listener) {
+        DatabaseReference usersRef = database.getReference("users");
+        DatabaseReference submissionsRef = database.getReference("submissions").child(formId);
+
+        usersRef.orderByChild("role").equalTo("student").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                List<StudentAnswerStatus> studentStatusList = new ArrayList<>();
+                long totalStudents = dataSnapshot.getChildrenCount();
+                int[] checkedCount = {0};
+
+                if (totalStudents == 0) {
+                    listener.onStudentAnswersFetch(studentStatusList);
+                    return;
+                }
+
+                for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                    String userId = userSnapshot.getKey();
+                    User student = userSnapshot.getValue(User.class);
+
+                    if (student == null || userId == null) {
+                        checkedCount[0]++;
+                        if (checkedCount[0] == totalStudents) {
+                            listener.onStudentAnswersFetch(studentStatusList);
+                        }
+                        continue;
+                    }
+
+                    checkIfAnsweredForm(userId, submissionsRef, isAnswered -> {
+                        studentStatusList.add(new StudentAnswerStatus(student, isAnswered));
+
+                        checkedCount[0]++;
+                        if (checkedCount[0] == totalStudents) {
+                            listener.onStudentAnswersFetch(studentStatusList);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                listener.onError(databaseError.toException());
+            }
+        });
+    }
+
+    // ✅ SIMPLER check for whether a user submitted
+    private static void checkIfAnsweredForm(String userId, DatabaseReference submissionsRef, final OnAnsweredListener listener) {
+        submissionsRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                listener.onAnswered(dataSnapshot.exists()); // only check if submission exists
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                listener.onAnswered(false);
+            }
+        });
+    }
+
+    // Interface for the callback to return fetched students
+
+    public interface OnStudentAnswersFetchListener {
+        void onStudentAnswersFetch(List<StudentAnswerStatus> studentStatuses);
+        void onError(Exception e);
+    }
 
 
 
+    // Interface for checking if a student has answered the form
+    public interface OnAnsweredListener {
+        void onAnswered(boolean isAnswered);
+    }
 
-}
+    }

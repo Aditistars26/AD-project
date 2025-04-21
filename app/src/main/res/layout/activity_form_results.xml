@@ -15,16 +15,62 @@
         android:textStyle="bold"
         android:padding="12dp"
         android:background="#F5F5F5"
-        android:elevation="2dp"/>
+        android:elevation="2dp" />
+
+    <LinearLayout
+        android:id="@+id/statistics_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center_horizontal"
+        android:layout_below="@id/results_header">
+
+        <TextView
+            android:id="@+id/text_answered"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:text="Answered: 0"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/text_not_answered"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Not Answered: 0"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- New Buttons Container -->
+    <LinearLayout
+        android:id="@+id/button_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_below="@id/statistics_container"
+        android:padding="12dp"
+        android:layout_marginBottom="8dp">
+
+        <Button
+            android:id="@+id/btn_download_unanswered"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Download Unanswered CSV"
+            android:layout_marginEnd="16dp" />
+
+
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/submissions_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/results_header"
+        android:layout_below="@id/button_container"
         android:padding="12dp"
         android:clipToPadding="false"
-        android:scrollbars="vertical"/>
+        android:scrollbars="vertical" />
 
     <TextView
         android:id="@+id/empty_text_view"
@@ -36,7 +82,7 @@
         android:layout_centerInParent="true"
         android:background="#F9F9F9"
         android:elevation="1dp"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
     <ProgressBar
         android:id="@+id/progress_bar"

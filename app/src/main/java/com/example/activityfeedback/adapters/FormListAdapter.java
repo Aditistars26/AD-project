@@ -9,8 +9,11 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import java.time.LocalDateTime;
 import android.widget.Toast;
+
+import com.example.activityfeedback.R;
+import com.example.activityfeedback.models.Form;
+import com.example.activityfeedback.utils.DateTimeConverter;
 import com.example.activityfeedback.utils.FirebaseHelper;
 
 import androidx.annotation.NonNull;
@@ -18,18 +21,14 @@ import androidx.annotation.RequiresApi;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.activityfeedback.R;
-import com.example.activityfeedback.models.Form;
-import com.example.activityfeedback.utils.DateTimeConverter;
-
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class FormListAdapter extends RecyclerView.Adapter<FormListAdapter.FormViewHolder> {
 
     private final Context context;
-    private final List<Form> forms;
+    private List<Form> forms;
     private final OnFormClickListener listener;
-
     private final boolean isProfessorView;
 
     public interface OnFormClickListener {
@@ -67,11 +66,9 @@ public class FormListAdapter extends RecyclerView.Adapter<FormListAdapter.FormVi
             holder.statusTextView.setTextColor(context.getResources().getColor(R.color.colorError));
         }
 
-        // Show controls only for professor view
         if (isProfessorView) {
             holder.professorControls.setVisibility(View.VISIBLE);
 
-            // Configure toggle button
             Button toggleButton = holder.toggleActiveButton;
             if (form.isActive()) {
                 toggleButton.setText("Deactivate Form");
@@ -83,37 +80,29 @@ public class FormListAdapter extends RecyclerView.Adapter<FormListAdapter.FormVi
             }
 
             toggleButton.setOnClickListener(v -> {
-                // Toggle the active status
                 form.setActive(!form.isActive());
                 form.setLastModified(LocalDateTime.now());
 
-                // Update in Firebase
                 FirebaseHelper.updateFormStatus(form.getFormId(), form.isActive(), form.getLastModified(), success -> {
                     if (success) {
                         notifyItemChanged(position);
                     } else {
-                        // Revert if failed
                         form.setActive(!form.isActive());
                         Toast.makeText(context, "Failed to update form status", Toast.LENGTH_SHORT).show();
                     }
                 });
             });
 
-            // Configure delete button
             Button deleteButton = holder.deleteFormButton;
             deleteButton.setOnClickListener(v -> {
-                // Show confirmation dialog
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
                 builder.setTitle("Delete Form");
                 builder.setMessage("Are you sure you want to delete this form? This will also delete all submissions for this form. This action cannot be undone.");
                 builder.setPositiveButton("Delete", (dialog, which) -> {
-                    // Show loading indicator
                     Toast.makeText(context, "Deleting form...", Toast.LENGTH_SHORT).show();
 
-                    // Call FirebaseHelper to delete the form
                     FirebaseHelper.deleteForm(form.getFormId(), success -> {
                         if (success) {
-                            // Remove from adapter
                             int adapterPosition = holder.getAdapterPosition();
                             if (adapterPosition != RecyclerView.NO_POSITION) {
                                 forms.remove(adapterPosition);
@@ -144,6 +133,12 @@ public class FormListAdapter extends RecyclerView.Adapter<FormListAdapter.FormVi
         return forms.size();
     }
 
+    public void updateList(List<Form> filteredForms) {
+        this.forms.clear();
+        this.forms.addAll(filteredForms);
+        notifyDataSetChanged();
+    }
+
     static class FormViewHolder extends RecyclerView.ViewHolder {
         CardView cardView;
         TextView titleTextView;
@@ -163,15 +158,12 @@ public class FormListAdapter extends RecyclerView.Adapter<FormListAdapter.FormVi
             createdAtTextView = itemView.findViewById(R.id.created_at_text_view);
             questionCountTextView = itemView.findViewById(R.id.question_count_text_view);
             statusTextView = itemView.findViewById(R.id.status_text_view);
-
             professorControls = itemView.findViewById(R.id.professor_controls);
 
-            // Add null checks for buttons
             if (professorControls != null) {
                 toggleActiveButton = itemView.findViewById(R.id.toggle_active_button);
                 deleteFormButton = itemView.findViewById(R.id.delete_form_button);
 
-                // Set debug visibility to make sure the button is created
                 if (deleteFormButton != null) {
                     deleteFormButton.setVisibility(View.VISIBLE);
                 }
